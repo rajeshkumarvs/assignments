@@ -1,0 +1,106 @@
+Step4: All five pods has been created on worker node with modified ports. (kubectl apply -f .)
+
+root@ip-172-31-13-142:~/example-voting-app/k8s-specifications# kubectl apply -f .
+deployment.apps/db created
+service/db created
+deployment.apps/redis created
+service/redis created
+deployment.apps/result created
+service/result created
+deployment.apps/vote created
+service/vote created
+deployment.apps/worker created
+
+root@ip-172-31-13-142:~/example-voting-app/k8s-specifications# kubectl get all
+NAME                          READY   STATUS              RESTARTS   AGE
+pod/db-58cc845644-lcpl6       0/1     ContainerCreating   0          11s
+pod/redis-6878558678-bnj69    0/1     ContainerCreating   0          11s
+pod/result-86bc6f7b5d-wdxgc   0/1     ContainerCreating   0          11s
+pod/vote-7d884dd585-s4phf     0/1     ContainerCreating   0          11s
+pod/worker-6fc5d5b668-qhznd   0/1     ContainerCreating   0          10s
+
+NAME             TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)          AGE
+service/db       ClusterIP   10.99.114.149    <none>        5432/TCP         11s
+service/redis    ClusterIP   10.96.240.22     <none>        6379/TCP         11s
+service/result   NodePort    10.104.251.153   <none>        5001:31003/TCP   11s
+service/vote     NodePort    10.107.207.32    <none>        5000:31002/TCP   11s
+
+NAME                     READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/db       0/1     1            0           11s
+deployment.apps/redis    0/1     1            0           11s
+deployment.apps/result   0/1     1            0           11s
+deployment.apps/vote     0/1     1            0           11s
+deployment.apps/worker   0/1     1            0           10s
+
+NAME                                DESIRED   CURRENT   READY   AGE
+replicaset.apps/db-58cc845644       1         1         0       11s
+replicaset.apps/redis-6878558678    1         1         0       11s
+replicaset.apps/result-86bc6f7b5d   1         1         0       11s
+replicaset.apps/vote-7d884dd585     1         1         0       11s
+replicaset.apps/worker-6fc5d5b668   1         1         0       10s
+root@ip-172-31-13-142:~/example-voting-app/k8s-specifications# 
+
+Step5: Nodeport assigned for voting pod and result pod
+  
+  NAME             TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)          AGE
+service/db       ClusterIP   10.99.114.149    <none>        5432/TCP         11s
+service/redis    ClusterIP   10.96.240.22     <none>        6379/TCP         11s
+service/result   NodePort    10.104.251.153   <none>        5001:31003/TCP   11s
+service/vote     NodePort    10.107.207.32    <none>        5000:31002/TCP   11s
+
+Step6: able to access the both app using public IP
+  Vote: http://47.129.11.30:31002/
+  Result: http://47.129.11.30:31003/
+
+Step7: Can vote and see the results on the browsers
+
+Step8a: Delete Voting Pod
+  root@ip-172-31-13-142:~/example-voting-app/k8s-specifications# kubectl get pod -o wide
+    NAME                      READY   STATUS    RESTARTS   AGE     IP           NODE               NOMINATED NODE   READINESS GATES
+  db-58cc845644-lcpl6       1/1     Running   0          5m16s   10.32.0.8    ip-172-31-13-142   <none>           <none>
+  redis-6878558678-bnj69    1/1     Running   0          5m16s   10.32.0.9    ip-172-31-13-142   <none>           <none>
+  result-86bc6f7b5d-wdxgc   1/1     Running   0          5m16s   10.32.0.10   ip-172-31-13-142   <none>           <none>
+  vote-7d884dd585-s4phf     1/1     Running   0          5m16s   10.32.0.11   ip-172-31-13-142   <none>           <none>
+  worker-6fc5d5b668-qhznd   1/1     Running   0          5m15s   10.32.0.12   ip-172-31-13-142   <none>           <none>
+    
+  kubectl delete po vote-7d884dd585-s4phf
+
+  It spwans new pod automatically and same is visible in the vote app browser page as well. 
+  We can still continue voting.
+
+Step8b: Delete worker pod
+
+  root@ip-172-31-13-142:~/example-voting-app/k8s-specifications# kubectl delete po worker-6fc5d5b668-qhznd
+  pod "worker-6fc5d5b668-qhznd" deleted
+
+  root@ip-172-31-13-142:~/example-voting-app/k8s-specifications# kubectl get pod -o wide
+  NAME                      READY   STATUS    RESTARTS   AGE     IP           NODE               NOMINATED NODE   READINESS GATES
+  db-58cc845644-lcpl6       1/1     Running   0          10m     10.32.0.8    ip-172-31-13-142   <none>           <none>
+  redis-6878558678-bnj69    1/1     Running   0          10m     10.32.0.9    ip-172-31-13-142   <none>           <none>
+  result-86bc6f7b5d-wdxgc   1/1     Running   0          10m     10.32.0.10   ip-172-31-13-142   <none>           <none>
+  vote-7d884dd585-49hlg     1/1     Running   0          3m28s   10.32.0.13   ip-172-31-13-142   <none>           <none>
+  worker-6fc5d5b668-cdc4s   1/1     Running   0          26s     10.32.0.11   ip-172-31-13-142   <none>           <none>
+
+No change is user experience, data intact. New worker pod spins up.
+
+Step8c: Delete db pod
+  root@ip-172-31-13-142:~/example-voting-app/k8s-specifications# kubectl delete po db-58cc845644-lcpl6
+  pod "db-58cc845644-lcpl6" deleted
+  root@ip-172-31-13-142:~/example-voting-app/k8s-specifications# kubectl get pod -o wide
+  NAME                      READY   STATUS    RESTARTS      AGE     IP           NODE               NOMINATED NODE   READINESS GATES
+  db-58cc845644-p7j5w       1/1     Running   0             75s     10.32.0.12   ip-172-31-13-142   <none>           <none>
+  redis-6878558678-bnj69    1/1     Running   0             13m     10.32.0.9    ip-172-31-13-142   <none>           <none>
+  result-86bc6f7b5d-wdxgc   1/1     Running   1 (44s ago)   13m     10.32.0.10   ip-172-31-13-142   <none>           <none>
+  vote-7d884dd585-49hlg     1/1     Running   0             6m30s   10.32.0.13   ip-172-31-13-142   <none>           <none>
+  worker-6fc5d5b668-cdc4s   1/1     Running   1 (44s ago)   3m28s   10.32.0.11   ip-172-31-13-142   <none>           <none> 
+
+  db pod gets spwaned again, but existing data on the db was lost.
+
+Step10: Existing data got deleted. but UI works still.
+        result pod and worker pod got restarted after DB pod delete/recreate. 
+        result pod did show the results with new data, not with old data. 
+
+Once the DB pod deleted, the data is cleared. 
+
+In this assignment, 5 pods along with service, deployment and replicaset gets created with the specified yaml files. 
+We can access the PODs URL from external world with the help of node's public ip along with nodeport detail.
